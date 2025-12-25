@@ -1,0 +1,9 @@
+{
+  "model_version": "1.0",
+  "created_date": "2025-12-10T15:25:14.632271",
+  "model_type": "RandomForestRegressor",
+  "features_count": 0,
+  "training_samples": 131302,
+  "test_r2_score": 0.945,
+  "deployment_ready": true
+}
