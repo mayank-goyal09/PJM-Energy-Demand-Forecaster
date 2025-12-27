@@ -289,10 +289,9 @@ header {background: transparent;}
 # LOAD MODEL & DATA
 # Helper function to download model from Google Drive
 def download_file_from_gdrive(file_id, output_path):
-    import urllib.request
-    url = f'https://drive.google.com/uc?id={file_id}&export=download'
-    urllib.request.urlretrieve(url, output_path)
-
+    import gdown
+    url = f'https://drive.google.com/uc?id={file_id}'
+    gdown.download(url, output_path, quiet=False)
 
 # =========================================================
 
@@ -938,5 +937,6 @@ st.markdown("""
     </div>
 </div>
 """, unsafe_allow_html=True)
+
 
 
