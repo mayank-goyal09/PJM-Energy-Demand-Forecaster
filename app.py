@@ -287,12 +287,26 @@ header {background: transparent;}
 
 # =========================================================
 # LOAD MODEL & DATA
+# Helper function to download model from Google Drive
+def download_file_from_gdrive(file_id, output_path):
+    import urllib.request
+    url = f'https://drive.google.com/uc?id={file_id}&export=download'
+    urllib.request.urlretrieve(url, output_path)
+
+
 # =========================================================
 
 @st.cache_resource
 def load_model():
     try:
-        return joblib.load('energy_forecaster_optimized.pkl')
+import os
+        import tempfile
+        file_id = '1twP3G123uFv4FEUk-fz9XKCZsXQ611Ka'
+        temp_dir = tempfile.gettempdir()
+        model_path = os.path.join(temp_dir, 'energy_forecaster_optimized.pkl')
+        if not os.path.exists(model_path):
+            download_file_from_gdrive(file_id, model_path)
+                return joblib.load(model_path)
     except:
         st.error("❌ Model file not found. Make sure 'energy_forecaster_optimized.pkl' is in the same folder.")
         st.stop()
