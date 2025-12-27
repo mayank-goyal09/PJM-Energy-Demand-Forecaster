@@ -341,10 +341,15 @@ def load_model():
         with st.spinner("⬇️ Downloading ML model (one-time)..."):
             download_file_from_gdrive(file_id, model_path)
 
+        
+    # Validate downloaded file
+    if not os.path.exists(model_path) or os.path.getsize(model_path) == 0:
+        st.error(f"❌ File not properly downloaded. Path: {model_path}")
+        st.stop()
     try:
         return joblib.load(model_path)
     except Exception as e:
-        st.error("❌ Model downloaded but failed to load.")
+        st.error(f"❌ Model failed to load: {str(e)}")
         st.stop()
 
 
@@ -1012,6 +1017,7 @@ st.markdown("""
     </div>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
