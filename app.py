@@ -329,7 +329,7 @@ def download_file_from_gdrive(file_id, output_path):
 # =====================================================
 # LOAD MODEL (CACHED)
 # =====================================================
-@@st.cache_resource
+@st.cache_resource
 def load_model():
     import io
     import requests
@@ -1032,6 +1032,7 @@ st.markdown("""
     </div>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
