@@ -353,13 +353,25 @@ def load_model():
 # =====================================================
 @st.cache_data
 def load_data():
+    import io
+    file_id = '1Ku59KT15eV4HobOoMHNVvAp55L1Azikz'
+    csv_file_name = 'energy_features.csv'
+    temp_dir = tempfile.gettempdir()
+    csv_path = os.path.join(temp_dir, csv_file_name)
+    
+    if not os.path.exists(csv_path):
+        with st.spinner("⬇️ Downloading dataset (one-time)..."):
+            download_file_from_gdrive(file_id, csv_path)
+    
     try:
         return pd.read_csv(
-            "energy_features.csv",
+            csv_path,
             parse_dates=["Datetime"],
             index_col="Datetime"
         )
-    except FileNotFoundError:
+    except Exception as e:
+        st.error("❌ CSV downloaded but failed to load.")
+        st.stop()
         st.error("❌ 'energy_features.csv' not found in project folder.")
         st.stop()
 
@@ -1000,6 +1012,7 @@ st.markdown("""
     </div>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
