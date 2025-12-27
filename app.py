@@ -308,9 +308,22 @@ from sklearn.metrics import (
 # GOOGLE DRIVE DOWNLOAD USING GDOWN
 # =====================================================
 def download_file_from_gdrive(file_id, output_path):
-    import gdown
-    url = f"https://drive.google.com/uc?id={file_id}"
-    gdown.download(url, output_path, quiet=False)
+    import requests
+    url = f'https://drive.google.com/uc?id={file_id}&export=download'
+    session = requests.Session()
+    response = session.get(url, stream=True)
+    token = None
+    for key, value in response.cookies.items():
+        if key.startswith('download_warning'):
+            token = value
+            break
+    if token:
+        params = {'id': file_id, 'confirm': token}
+        response = session.get('https://drive.google.com/uc?export=download', params=params, stream=True)
+    with open(output_path, 'wb') as f:
+        for chunk in response.iter_content(chunk_size=32768):
+            if chunk:
+                f.write(chunk)
 
 
 # =====================================================
@@ -987,6 +1000,7 @@ st.markdown("""
     </div>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
