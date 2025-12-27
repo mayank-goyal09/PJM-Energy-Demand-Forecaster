@@ -329,28 +329,43 @@ def download_file_from_gdrive(file_id, output_path):
 # =====================================================
 # LOAD MODEL (CACHED)
 # =====================================================
-@st.cache_resource
+@@st.cache_resource
 def load_model():
+    import io
+    import requests
+    
     file_id = "1twP3G123uFv4FEUk-fz9XKCZsXQ611Ka"
-    model_name = "energy_forecaster_optimized.pkl"
-
-    temp_dir = tempfile.gettempdir()
-    model_path = os.path.join(temp_dir, model_name)
-
-    if not os.path.exists(model_path):
-        with st.spinner("⬇️ Downloading ML model (one-time)..."):
-            download_file_from_gdrive(file_id, model_path)
-
-        
-    # Validate downloaded file
-    if not os.path.exists(model_path) or os.path.getsize(model_path) == 0:
-        st.error(f"❌ File not properly downloaded. Path: {model_path}")
-        st.stop()
+    url = f'https://drive.google.com/uc?id={file_id}&export=download'
+    
     try:
-        return joblib.load(model_path)
+        with st.spinner("⬇️ Loading model from Google Drive..."):
+            session = requests.Session()
+            response = session.get(url, stream=True)
+            token = None
+            for key, value in response.cookies.items():
+                if key.startswith('download_warning'):
+                    token = value
+                    break
+            
+            if token:
+                params = {'id': file_id, 'confirm': token}
+                response = session.get('https://drive.google.com/uc?export=download', 
+                                     params=params, stream=True)
+            
+            # Load directly into memory without saving to disk
+            pkl_bytes = b''
+            for chunk in response.iter_content(chunk_size=32768):
+                if chunk:
+                    pkl_bytes += chunk
+            
+            # Load from bytes directly
+            model = joblib.load(io.BytesIO(pkl_bytes))
+            return model
+            
     except Exception as e:
         st.error(f"❌ Model failed to load: {str(e)}")
         st.stop()
+
 
 
 # =====================================================
@@ -1017,6 +1032,7 @@ st.markdown("""
     </div>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
