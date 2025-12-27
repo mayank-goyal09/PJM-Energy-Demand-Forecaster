@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 import os
 import tempfile
-
+import gdown
 
 
 # =========================================================
@@ -331,39 +331,21 @@ def download_file_from_gdrive(file_id, output_path):
 # =====================================================
 @st.cache_resource
 def load_model():
-    import io
-    import requests
-    
     file_id = "1twP3G123uFv4FEUk-fz9XKCZsXQ611Ka"
-    url = f'https://drive.google.com/uc?id={file_id}&export=download'
-    
+    model_name = "energy_forecaster_optimized.pkl"
+
+    temp_dir = tempfile.gettempdir()
+    model_path = os.path.join(temp_dir, model_name)
+
+    if not os.path.exists(model_path):
+        with st.spinner("⬇️ Downloading model (one-time)..."):
+            url = f"https://drive.google.com/uc?id={file_id}"
+            gdown.download(url, model_path, quiet=False)
+
     try:
-        with st.spinner("⬇️ Loading model from Google Drive..."):
-            session = requests.Session()
-            response = session.get(url, stream=True)
-            token = None
-            for key, value in response.cookies.items():
-                if key.startswith('download_warning'):
-                    token = value
-                    break
-            
-            if token:
-                params = {'id': file_id, 'confirm': token}
-                response = session.get('https://drive.google.com/uc?export=download', 
-                                     params=params, stream=True)
-            
-            # Load directly into memory without saving to disk
-            pkl_bytes = b''
-            for chunk in response.iter_content(chunk_size=32768):
-                if chunk:
-                    pkl_bytes += chunk
-            
-            # Load from bytes directly
-            model = joblib.load(io.BytesIO(pkl_bytes))
-            return model
-            
+        return joblib.load(model_path)
     except Exception as e:
-        st.error(f"❌ Model failed to load: {str(e)}")
+        st.error("❌ Model downloaded but failed to load.")
         st.stop()
 
 
@@ -1032,6 +1014,7 @@ st.markdown("""
     </div>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
