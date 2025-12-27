@@ -8,6 +8,10 @@ from datetime import datetime, timedelta
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 import plotly.graph_objects as go
 import plotly.express as px
+import os
+import tempfile
+
+
 
 # =========================================================
 # PAGE CONFIG
@@ -288,53 +292,99 @@ header {background: transparent;}
 # =========================================================
 # LOAD MODEL & DATA
 # Helper function to download model from Google Drive
+import os
+import tempfile
+import numpy as np
+import pandas as pd
+import joblib
+import streamlit as st
+from sklearn.metrics import (
+    r2_score,
+    mean_absolute_error,
+    mean_squared_error
+)
+
+# =====================================================
+# GOOGLE DRIVE DOWNLOAD USING GDOWN
+# =====================================================
 def download_file_from_gdrive(file_id, output_path):
     import gdown
-    url = f'https://drive.google.com/file/d/1twP3G123uFv4FEUk-fz9XKCZsXQ611Ka/view?usp=sharing'
+    url = f"https://drive.google.com/uc?id={file_id}"
     gdown.download(url, output_path, quiet=False)
 
-# =========================================================
 
+# =====================================================
+# LOAD MODEL (CACHED)
+# =====================================================
 @st.cache_resource
 def load_model():
-    try:
-        import os
-        import tempfile
-        file_id = '1twP3G123uFv4FEUk-fz9XKCZsXQ611Ka'
-        temp_dir = tempfile.gettempdir()
-        model_path = os.path.join(temp_dir, 'energy_forecaster_optimized.pkl')
-        if not os.path.exists(model_path):
+    file_id = "1twP3G123uFv4FEUk-fz9XKCZsXQ611Ka"
+    model_name = "energy_forecaster_optimized.pkl"
+
+    temp_dir = tempfile.gettempdir()
+    model_path = os.path.join(temp_dir, model_name)
+
+    if not os.path.exists(model_path):
+        with st.spinner("⬇️ Downloading ML model (one-time)..."):
             download_file_from_gdrive(file_id, model_path)
+
+    try:
         return joblib.load(model_path)
-    except:
-        st.error("❌ Model file not found. Make sure 'energy_forecaster_optimized.pkl' is in the same folder.")
+    except Exception as e:
+        st.error("❌ Model downloaded but failed to load.")
         st.stop()
 
+
+# =====================================================
+# LOAD DATA (CACHED)
+# =====================================================
 @st.cache_data
 def load_data():
     try:
-        df = pd.read_csv('energy_features.csv', parse_dates=['Datetime'], index_col='Datetime')
-        return df
-    except:
-        st.error("❌ Data file not found. Make sure 'energy_features.csv' is in the same folder.")
+        return pd.read_csv(
+            "energy_features.csv",
+            parse_dates=["Datetime"],
+            index_col="Datetime"
+        )
+    except FileNotFoundError:
+        st.error("❌ 'energy_features.csv' not found in project folder.")
         st.stop()
 
+
+# =====================================================
+# LOAD RESOURCES
+# =====================================================
 model = load_model()
 df = load_data()
 
-# Calculate metrics
-split_date = '2017-01-01'
+# =====================================================
+# EVALUATION
+# =====================================================
+split_date = "2017-01-01"
+
 train = df.loc[df.index < split_date]
 test = df.loc[df.index >= split_date]
 
-X_test = test.drop('energy_mw', axis=1)
-y_test = test['energy_mw']
+X_test = test.drop("energy_mw", axis=1)
+y_test = test["energy_mw"]
+
 y_pred = model.predict(X_test)
 
 overall_r2 = r2_score(y_test, y_pred)
 overall_mae = mean_absolute_error(y_test, y_pred)
 overall_rmse = np.sqrt(mean_squared_error(y_test, y_pred))
 overall_mape = np.mean(np.abs((y_test - y_pred) / y_test)) * 100
+
+# =====================================================
+# DISPLAY METRICS
+# =====================================================
+st.subheader("📊 Model Performance")
+
+st.metric("R² Score", f"{overall_r2:.4f}")
+st.metric("MAE", f"{overall_mae:.2f}")
+st.metric("RMSE", f"{overall_rmse:.2f}")
+st.metric("MAPE (%)", f"{overall_mape:.2f}")
+
 
 # =========================================================
 # HERO HEADER
@@ -937,6 +987,7 @@ st.markdown("""
     </div>
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
